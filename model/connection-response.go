@@ -1,5 +1,5 @@
 package model
 
-type ConnectionResponse struct {
-	ConnectionId int `json:"connectionId"`
+type ConnectResponse struct {
+	SessionId string `json:"sessionId"`
 }

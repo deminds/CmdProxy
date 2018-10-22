@@ -3,12 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/deminds/CmdProxy/connection"
+	"github.com/deminds/CmdProxy/generatorid"
+	"github.com/deminds/CmdProxy/session"
 	"net/http"
 	"os"
 	"runtime/debug"
 
-	httpHandlers "github.com/deminds/CmdProxy/provider"
+	"github.com/deminds/CmdProxy/controller"
 	"github.com/golang/glog"
 )
 
@@ -33,18 +34,18 @@ func main() {
 
 	glog.Infof(">>>>> Serivice start. Args: %+v", os.Args)
 
-	connectionPool := connection.NewConnectionPool()
+	idGenerator := generatorid.NewIDGenerator()
 
-	localHttpController := httpHandlers.LocalHttpController{
-		ConnectionPool: connectionPool,
-	}
+	pool := session.NewSessionPool()
 
 	h := http.NewServeMux()
 
-	h.HandleFunc(fmt.Sprintf("/api/%v/telnet/connect", API_VERSION), httpHandlers.TelnetConnectHandler)
-	h.HandleFunc(fmt.Sprintf("/api/%v/telnet/disconnect", API_VERSION), httpHandlers.TelnetDisconnectHandler)
-	h.HandleFunc(fmt.Sprintf("/api/%v/telnet/command", API_VERSION), httpHandlers.TelnetCommandHandler)
-	h.HandleFunc(fmt.Sprintf("/api/%v/telnet/list", API_VERSION), httpHandlers.TelnetListHandler)
+	localHttpController := controller.NewLocalHttpController(pool, idGenerator)
+
+	h.HandleFunc(fmt.Sprintf("/api/%v/telnet/connect", API_VERSION), controller.TelnetConnectHandler)
+	h.HandleFunc(fmt.Sprintf("/api/%v/telnet/disconnect", API_VERSION), controller.TelnetDisconnectHandler)
+	h.HandleFunc(fmt.Sprintf("/api/%v/telnet/command", API_VERSION), controller.TelnetCommandHandler)
+	h.HandleFunc(fmt.Sprintf("/api/%v/telnet/list", API_VERSION), controller.TelnetListHandler)
 
 	h.HandleFunc(fmt.Sprintf("/api/%v/local/connect", API_VERSION), localHttpController.LocalConnectHandler)
 	h.HandleFunc(fmt.Sprintf("/api/%v/local/disconnect", API_VERSION), localHttpController.LocalDisconnectHandler)

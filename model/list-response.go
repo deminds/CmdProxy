@@ -1,5 +1,5 @@
 package model
 
 type ListResponse struct {
-	ConnectionIds []int `json:"connectionIds"`
+	SessionIds []string `json:"sessionIds"`
 }
