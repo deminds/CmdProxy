@@ -18,8 +18,10 @@ const (
 )
 
 var (
-	HttpHost = *flag.String("host", "0.0.0.0", "IP for start application on it")
-	HttpPort = *flag.Int("port", 25505, "Port for start application on it")
+	HttpHost = flag.String("host", "0.0.0.0", "IP for start application on it")
+	HttpPort = flag.Int("port", 25505, "Port for start application on it")
+
+	consoleTimeoutSec = flag.Int("consoleTimeout", 10, "Set timeout for console session and timeout for command in session")
 )
 
 func main() {
@@ -32,7 +34,7 @@ func main() {
 	}()
 	flag.Parse()
 
-	glog.Infof(">>>>> Serivice start. Args: %+v", os.Args)
+	glog.Infof(">>>>> Service start. Args: %+v", os.Args)
 
 	idGenerator := generatorid.NewIDGenerator()
 
@@ -40,20 +42,20 @@ func main() {
 
 	h := http.NewServeMux()
 
-	localHttpController := controller.NewLocalHttpController(pool, idGenerator)
+	consoleHttpController := controller.NewConsoleHttpController(pool, idGenerator, *consoleTimeoutSec)
 
 	h.HandleFunc(fmt.Sprintf("/api/%v/telnet/connect", API_VERSION), controller.TelnetConnectHandler)
 	h.HandleFunc(fmt.Sprintf("/api/%v/telnet/disconnect", API_VERSION), controller.TelnetDisconnectHandler)
 	h.HandleFunc(fmt.Sprintf("/api/%v/telnet/command", API_VERSION), controller.TelnetCommandHandler)
 	h.HandleFunc(fmt.Sprintf("/api/%v/telnet/list", API_VERSION), controller.TelnetListHandler)
 
-	h.HandleFunc(fmt.Sprintf("/api/%v/local/connect", API_VERSION), localHttpController.LocalConnectHandler)
-	h.HandleFunc(fmt.Sprintf("/api/%v/local/disconnect", API_VERSION), localHttpController.LocalDisconnectHandler)
-	h.HandleFunc(fmt.Sprintf("/api/%v/local/command", API_VERSION), localHttpController.LocalCommandHandler)
-	h.HandleFunc(fmt.Sprintf("/api/%v/local/list", API_VERSION), localHttpController.LocalListHandler)
+	h.HandleFunc(fmt.Sprintf("/api/%v/console/connect", API_VERSION), consoleHttpController.ConsoleConnectHandler)
+	h.HandleFunc(fmt.Sprintf("/api/%v/console/disconnect", API_VERSION), consoleHttpController.ConsoleDisconnectHandler)
+	h.HandleFunc(fmt.Sprintf("/api/%v/console/command", API_VERSION), consoleHttpController.ConsoleCommandHandler)
+	h.HandleFunc(fmt.Sprintf("/api/%v/console/list", API_VERSION), consoleHttpController.ConsoleListHandler)
 
-	glog.Infof("Start listen %v:%v", HttpHost, HttpPort)
-	l := http.ListenAndServe(fmt.Sprintf("%v:%v", HttpHost, HttpPort), h)
+	glog.Infof("Start listen %v:%v", *HttpHost, *HttpPort)
+	l := http.ListenAndServe(fmt.Sprintf("%v:%v", *HttpHost, *HttpPort), h)
 
 	glog.Fatal(l)
 }
