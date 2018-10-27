@@ -49,9 +49,11 @@ type ConsoleSession struct {
 	disconnect chan bool
 }
 
-func (o *ConsoleSession) Connect() {
+func (o *ConsoleSession) Connect() error {
 	glog.Infof("ConsoleSession.Connect() ID: %v, Type: %v", o.id, o.sessionType)
 	go o.start()
+
+	return nil
 }
 
 func (o *ConsoleSession) Command(command string) (string, error) {
@@ -102,8 +104,8 @@ func (o *ConsoleSession) IsClose() bool {
 func (o *ConsoleSession) Close() {
 	glog.Infof("ConsoleSession.Close(). ID: %v, Type: %v", o.id, o.sessionType)
 
-	o.disconnect <- true
 	o.isClose = true
+	o.disconnect <- true
 }
 
 func (o *ConsoleSession) start() {

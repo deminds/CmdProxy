@@ -1,7 +1,7 @@
 package session
 
 type ISession interface {
-	Connect()
+	Connect() error
 	Command(command string) (string, error)
 	Ping() bool
 	GetId() string

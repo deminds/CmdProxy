@@ -7,31 +7,25 @@ import (
 
 func NewSessionPool() *SessionPool {
 	return &SessionPool{
-		sessions: map[SessionType]map[string]ISession{},
+		sessions: map[string]ISession{},
 		mutex:    sync.Mutex{},
 	}
 }
 
 type SessionPool struct {
-	sessions map[SessionType]map[string]ISession
+	sessions map[string]ISession
 	mutex    sync.Mutex
 }
 
-func (o *SessionPool) Get(sessType SessionType, sessID string) (ISession, error) {
-	typeToSessions, exist := o.sessions[sessType]
-	if !exist {
-		return nil, fmt.Errorf("try to get session from sessionPool. "+
-			"SessionType not found. ID: %s, Type: %s", sessID, sessType)
-	}
-
-	sess, exist := typeToSessions[sessID]
+func (o *SessionPool) Get(sessID string) (ISession, error) {
+	sess, exist := o.sessions[sessID]
 	if !exist {
 		return nil, fmt.Errorf("try to get sessID sessionPool. "+
-			"SessID not found. ID: %v, Type: %v", sessID, sessType)
+			"SessID not found. ID: %v", sessID)
 	}
 
 	if sess.IsClose() {
-		o.RemoveAndClose(sessType, sessID)
+		o.RemoveAndClose(sessID)
 
 		return nil, fmt.Errorf("get closed session from sessionPool. Remove session. "+
 			"ID: %v, Type: %v", sess.GetId(), sess.GetType())
@@ -49,36 +43,25 @@ func (o *SessionPool) Put(sess ISession) error {
 			"ID: %v, Type: %v", sessID, sessType)
 	}
 
-	_, exist := o.sessions[sessType]
-	if !exist {
-		o.sessions[sessType] = map[string]ISession{}
-	}
-
-	_, exist = o.sessions[sessType][sessID]
+	_, exist := o.sessions[sessID]
 	if exist {
-		return fmt.Errorf("session with same Type and ID already in sessionPool. "+
+		return fmt.Errorf("session with same ID already in sessionPool. "+
 			"ID: %v, Type: %v", sessID, sessType)
 	}
 
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
 
-	o.sessions[sessType][sessID] = sess
+	o.sessions[sessID] = sess
 
 	return nil
 }
 
-func (o *SessionPool) RemoveAndClose(sessType SessionType, sessID string) error {
-	typeToSessions, exist := o.sessions[sessType]
-	if !exist {
-		return fmt.Errorf("try to get session from sessionPool. "+
-			"SessionType not found. ID: %v, Type: %v", sessID, sessType)
-	}
-
-	sess, exist := typeToSessions[sessID]
+func (o *SessionPool) RemoveAndClose(sessID string) error {
+	sess, exist := o.sessions[sessID]
 	if !exist {
 		return fmt.Errorf("try to get sessID from sessionPool. "+
-			"SessID not found. ID: %v, Type: %v", sessID, sessType)
+			"SessID not found. ID: %v", sessID)
 	}
 
 	if !sess.IsClose() {
@@ -88,7 +71,7 @@ func (o *SessionPool) RemoveAndClose(sessType SessionType, sessID string) error 
 	o.mutex.Lock()
 	defer o.mutex.Unlock()
 
-	delete(o.sessions[sessType], sessID)
+	delete(o.sessions, sessID)
 
 	return nil
 }
