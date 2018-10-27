@@ -32,19 +32,24 @@ def parse_args():
 
     parser.add_argument('--id', type=str, help='Session Id', required=False)
 
-    parser.add_argument('--login', type=str, help='Login', required=False)
-    parser.add_argument('--password', type=str, help='Password', required=False)
-    parser.add_argument('--telnetHost', type=str, default='localhost', help='Telnet host', required=False)
-    parser.add_argument('--telnetPort', type=int, default=23, help='Telnet port', required=False)
+    parser.add_argument('--targetLogin', type=str, help='User Login on you target device', required=False)
+    parser.add_argument('--targetPassword', type=str, help='User Login on you target device', required=False)
+    parser.add_argument('--targetHost', type=str, default='localhost', help='Telnet host of target host', required=False)
+    parser.add_argument('--targetPort', type=int, default=23, help='Telnet port of target host', required=False)
 
-    parser.add_argument('--command', type=str, help='Command', required=False)
+    parser.add_argument('--loginExpectedString', type=str, help='Marker start of string for enter login. Depends on you device. Usually: "Login:"', required=False)
+    parser.add_argument('--passwordExpectedString', type=str, help='Marker start of string for enter password. Depends on you device. Usually: "Password:"', required=False)
+    parser.add_argument('--hostnameExpectedString', type=str, help='Marker start of string for enter command. Depends on you device. Usually: is hostname', required=False)
+    parser.add_argument('--continueCommandExpectedString', type=str, help='Marker start of string for enter continue command. Then listing to long in that case device separate it on several parts and you must press any key for see next part. Depend on your device.', required=False)
+
+    parser.add_argument('--command', type=str, help='Command for execute on you target device', required=False)
 
     args = parser.parse_args()
 
     return args
 
-def console_command(args, sessId):
-    print('[INFO]: console/command')
+def command(args, sessId):
+    print('[INFO]: {}/command'.format(args.type))
     print('[INFO]: exec command: "{}"'.format(args.command))
     url = get_url(args, 'command')
 
@@ -59,13 +64,13 @@ def console_command(args, sessId):
         raise Exception()
 
     json = resp.json()
-    print('[INFO]: console/disconnect Success. SessId: {}'.format(json[SESSIONID_PARAM]))
+    print('[INFO]: {}/command Success. SessId: {}'.format(args.type, json[SESSIONID_PARAM]))
     print('[INFO]: raw output: {}'.format(json))
 
     return
     
-def console_disconnect(args, sessId):
-    print('[INFO]: console/disconnect')
+def disconnect(args, sessId):
+    print('[INFO]: {}/disconnect'.format(args.type))
     url = get_url(args, 'disconnect')
 
     params = {
@@ -77,7 +82,7 @@ def console_disconnect(args, sessId):
         print('[ERROR]: GET error. Status: {}'.format(resp.status_code))
         raise Exception()
 
-    print('[INFO]: console/disconnect Success. SessId: {}'.format(sessId))
+    print('[INFO]: {}/disconnect Success. SessId: {}'.format(args.type, sessId))
 
     return
 
@@ -99,32 +104,71 @@ def console_connect(args):
     return json[SESSIONID_PARAM]
 
 
+def console(args):
+    print("[INFO]: handle console")
+    if args.action == 'connect':
+        console_connect(args)
+    elif args.action == 'disconnect':
+        disconnect(args, args.id)
+    elif args.action == 'command':
+        command(args, args.id)
+    elif args.action == 'commandWithConnect':
+        try:
+            sessId = console_connect(args)
+            command(args, sessId)
+            disconnect(args, sessId)
+        except e:
+            return
+
+
+def telnet_connect(args):
+    print('[INFO]: telnet/connect')
+    url = get_url(args, 'connect')
+
+    params = {
+        "host": args.targetHost,
+        "port": args.targetPort,
+        "login": args.targetLogin,
+        "password": args.targetPassword,
+        "loginExpectedString": args.loginExpectedString,
+        "passwordExpectedString": args.passwordExpectedString,
+        "hostnameExpectedString": args.hostnameExpectedString,
+        "continueCommandExpectedString": args.continueCommandExpectedString
+    }
+
+    resp = requests.post(url, json=params)
+    if resp.status_code != 200:
+        print('[ERROR]: GET error. Status: {}'.format(resp.status_code))
+        raise Exception()
+
+    json = resp.json()
+    print('[INFO]: telnet/connect Success. SessId: {}'.format(json[SESSIONID_PARAM]))
+
+    return json[SESSIONID_PARAM]
+
+
+def telnet(args):
+    print("[INFO]: handle telnet")
+    if args.action == 'connect':
+        telnet_connect(args)
+    elif args.action == 'disconnect':
+        disconnect(args, args.id)
+    elif args.action == 'command':
+        command(args, args.id)
+    elif args.action == 'commandWithConnect':
+        try:
+            sessId = telnet_connect(args)
+            command(args, sessId)
+            disconnect(args, sessId)
+        except e:
+            return
+
 def get_url(args, action):
     url = 'http://{}:{}/api/{}/{}/{}'.format(args.host, args.port, API_VER, args.type, action)
     print("[INFO]: build URL: {}".format(url))
 
     return url
 
-
-def console(args):
-    print("[INFO]: handle console")
-    if args.action == 'connect':
-        console_connect(args)
-    elif args.action == 'disconnect':
-        console_disconnect(args, args.id)
-    elif args.action == 'command':
-        console_command(args, args.id)
-    elif args.action == 'commandWithConnect':
-        try:
-            sessId = console_connect(args)
-            console_command(args, sessId)
-            console_disconnect(args, sessId)
-        except e:
-            return
-
-def telnet(args):
-    print("[INFO]: handle telnet")
-    print("[ERROR]: not implemented yet")
 
 def main(args):
     if args.type == 'console':
