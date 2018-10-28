@@ -141,7 +141,7 @@ func (o *TelnetSession) Command(command string) (string, error) {
 	select {
 	case res := <-o.output:
 		glog.Infof("%v Received output. "+
-			"ID: %v, Type: %v, Output: '%v'", logPrefix, o.id, o.sessionType, res)
+			"ID: %v, Type: %v, Output: '%s'", logPrefix, o.id, o.sessionType, res)
 
 		return res, nil
 	case <-time.After(o.timeout):
@@ -206,14 +206,13 @@ func (o *TelnetSession) start() {
 				return
 			}
 
-			resp, err := o.readUntil(o.hostnameExpectedString)
+			resp, err := o.readStringUntil(o.hostnameExpectedString)
 			if err != nil {
 				glog.Errorf("%v Read after send command. Exit routine. Wait: %v, Error: %v", logPrefix, o.hostnameExpectedString, err)
 				o.isClose = true
 
 				return
 			}
-			glog.Infof("%v Send command. Command: %v, Response: %v", logPrefix, cmd, resp)
 
 			if !o.isClose {
 				o.output <- resp
@@ -246,35 +245,48 @@ func (o *TelnetSession) start() {
 func (o *TelnetSession) readUntil(delim string) (string, error) {
 	logPrefix := "TelnetSession.readUntil()"
 
+	o.sess.SetReadDeadline(time.Now().Add(o.timeout))
+	resBytes, err := o.sess.ReadUntil(delim)
+	if err != nil {
+		return "", fmt.Errorf("%v o.sess.ReadUntil() "+
+			"ID: %v, Delim: %v, Error: %v", logPrefix, o.id, delim, err)
+	}
+
+	return string(resBytes), nil
+}
+
+func (o *TelnetSession) readStringUntil(delim string) (string, error) {
+	logPrefix := "TelnetSession.readStringUntil()"
+
+	delim = string([]byte{10}) + delim
+
 	delims := []string{}
 	if o.continueExpectedString != "" {
 		delims = append(delims, o.continueExpectedString)
 	}
 	delims = append(delims, delim)
 
-	continueExpStrIdx := 0
 	buf := bytes.Buffer{}
 	for {
-		glog.Infof("%v first iteration", logPrefix)
-
 		o.sess.SetReadDeadline(time.Now().Add(o.timeout))
-		resBytes, idx, err := o.sess.ReadUntilIndex(delim)
+		resBytes, idx, err := o.sess.ReadUntilIndex(delims...)
 		if err != nil {
 			return "", fmt.Errorf("%v o.sess.ReadUntilIndex() "+
 				"ID: %v, Delim: %v, Error: %v", logPrefix, o.id, delim, err)
 		}
 
 		if _, err := buf.Write(resBytes); err != nil {
-			return "", fmt.Errorf("%v Resp to buf.Write "+
+			return "", fmt.Errorf("%v buf.Write() "+
 				"ID: %v, Delim: %v, Error: %v", logPrefix, o.id, delim, err)
 		}
 
-		if o.continueExpectedString == "" || idx != continueExpStrIdx {
+		if o.continueExpectedString == "" || idx != 0 {
 			break
 		}
 
-		if err := o.sendLine(ContinueCommand); err != nil {
-			return "", fmt.Errorf("%v. Send continue msg. ID: %v, Delim: %v, Error: %v", logPrefix, o.id, delim, err)
+		if err := o.sendLine(" "); err != nil {
+			return "", fmt.Errorf("%v sendLine() "+
+				"ID: %v, Delim: %v, Error: %v", logPrefix, o.id, delim, err)
 		}
 	}
 
