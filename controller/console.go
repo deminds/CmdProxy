@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/golang/glog"
+
 	"github.com/deminds/CmdProxy/model"
 	"github.com/deminds/CmdProxy/session/types"
-	"github.com/golang/glog"
 )
 
 func (o *HttpController) ConsoleConnectHandler(respWriter http.ResponseWriter, request *http.Request) {

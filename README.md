@@ -3,6 +3,8 @@ Execute local shell commands and manage remote telnet devices via this http serv
 
 ## Example usage
 
+## Console
+
 #### CURL
 
 ##### Connect

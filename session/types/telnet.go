@@ -51,6 +51,7 @@ func NewTelnetSession(idGenerator *generatorid.IDGenerator, timeoutSec int, requ
 	return sess, nil
 }
 
+// TODO: remove channels
 type TelnetSession struct {
 	id          string
 	isClose     bool
@@ -242,6 +243,7 @@ func (o *TelnetSession) start() {
 	}
 }
 
+// Will find delim in full output
 func (o *TelnetSession) readUntil(delim string) (string, error) {
 	logPrefix := "TelnetSession.readUntil()"
 
@@ -255,9 +257,11 @@ func (o *TelnetSession) readUntil(delim string) (string, error) {
 	return string(resBytes), nil
 }
 
+// Will find delim in begin of string
 func (o *TelnetSession) readStringUntil(delim string) (string, error) {
 	logPrefix := "TelnetSession.readStringUntil()"
 
+	// append next line '\n' before delimiter
 	delim = string([]byte{10}) + delim
 
 	delims := []string{}

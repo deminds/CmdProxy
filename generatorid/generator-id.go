@@ -2,9 +2,9 @@ package generatorid
 
 import (
 	"fmt"
-	"github.com/golang/glog"
 	"strconv"
 
+	"github.com/golang/glog"
 	"github.com/sony/sonyflake"
 )
 

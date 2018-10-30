@@ -10,17 +10,22 @@ COMMAND_PARAM = 'command'
 def parse_args():
     parser = argparse.ArgumentParser(description="Simple tool for testing and demonstrating CmdProxy work",
         usage='''
-        Connect:
-        ./testHandler.py --type=console --action=connect 
+        Console:
+            Connect:
+            ./testHandler.py --type=console --action=connect
 
-        Command:
-        ./testHandler.py --type=console --action=command --command="ls -lah" --id=219602104153538926
+            Command:
+            ./testHandler.py --type=console --action=command --command="ls -lah" --id=219602104153538926
 
-        Disconnect:
-        ./testHandler.py --type=console --action=disconnect --id=219602104153538926
+            Disconnect:
+            ./testHandler.py --type=console --action=disconnect --id=219602104153538926
 
-        Complex use:
-        ./testHandler.py --type=console --action=commandWithConnect --command="ls -lah"
+            Complex use:
+            ./testHandler.py --type=console --action=commandWithConnect --command="ls -lah"
+
+        Telnet:
+            Conplex use:
+            ./testHandler.py --type=telnet --action=commandWithConnect --targetHost=172.16.5.10 --targetPort=23 --targetLogin=userName --targetPassword="PasSWoRd" --loginExpectedString="Username" --passwordExpectedString="Password" --hostnameExpectedString="host-name" --continueCommandExpected=" --More--" --command="show version"
         ''')
 
     parser.add_argument('--type', type=str, choices=['console', 'telnet'], help='Action type', required=True)

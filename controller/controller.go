@@ -5,10 +5,11 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/golang/glog"
+
 	"github.com/deminds/CmdProxy/generatorid"
 	"github.com/deminds/CmdProxy/model"
 	"github.com/deminds/CmdProxy/session"
-	"github.com/golang/glog"
 )
 
 const (
