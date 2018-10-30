@@ -1,7 +1,7 @@
 package model
 
 type CommandRequest struct {
-	ConnectionId int    `json:"connectionId"`
-	CommandId    int    `json:"commandId"`
-	Command      string `json:"command"`
+	SessionId string `json:"sessionid"`
+	CommandId int    `json:"commandid,omitempty"`
+	Command   string `json:"command"`
 }
